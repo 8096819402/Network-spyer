@@ -1,64 +1,41 @@
-from threading import Thread
 import socket
-import subprocess
-import os
+import sys
+import threading
+import Queue
 
-#host = raw_input('Enter host:  ')
-'''from_port = input('start scan from port : ')
-to_port = input('finish scan to port :')
-counting_open = []
-counting_close = []
-threads = []'''
+common_ports={
 
+          "21":"ftp",
+          "22":"ssh",
+          "80":"http",
+          "443":"https",
+          "135":"rk"
+    }
 
+def is_port_open(host,port):
+    try:
+        sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        sock.settimeout(0.5)
+        sock.connect((host,port))
+    except socket.error:
+        return False
+    return True
+def scanner(host):
+    while True:
+        port =port_queue.get()
+        if is_port_open(host,port):
+            if str(port) in common_ports:
+                print("{} is Open".format(str(port),common_ports[str(port)]))
+            else:
+                print("{} is Open".format(port))
+        port_queue.task_done()
+port_queue=Queue.Queue()
+for _ in range(20):
+    t=threading.Thread(target=scanner,kwargs={"host":sys.argv[1]})
+    t.daemon=True
+    t.start()
+for port in range(1024):
+    port_queue.put(port)
 
+port_queue.join()
 
-
-def lookup(addr):
-     try:
-         return socket.gethostbyaddr(addr)
-     except socket.herror:
-         return None, None, None
-def ARP_Scan(ip_add_range):
-    with open(os.devnull, "wb") as limbo:
-        for n in xrange(1, 50):
-                ip=ip_add_range.format(n)
-
-
-                resul=subprocess.Popen(["ping", "-n", "1", "-w", "200", ip],
-                         stdout=limbo, stderr=limbo).wait()
-                if  resul:
-                     print(ip,"inactive")
-                else:
-                        name,alias,addresslist = lookup(ip)
-                        if name != None:
-                            name1 = name
-                            print(ip, "active", name1)
-
-                '''            def scan(port):
-                                s = socket.socket()
-                                result = s.connect_ex((ip, port))
-
-                                for i in range(from_port, to_port + 1):
-                                    t = Thread(target=scan, args=(i,))
-                                    threads.append(t)
-                                    t.start()
-
-                                    [t.join() for t in threads]
-
-                                if result == 0:
-                                    counting_open.append(port)
-                                    print(ip,"active",name1,(str(port)) + ' :open\n')
-                                    s.close()
-                                else:
-                                    counting_close.append(port)
-                                    print(ip,"active",name1,(str(port)) + ' :close\n')
-                                    s.close()'''
-
-
-
-                           # print (ip, "active",name1,counting_open)
-
-
-
-ARP_Scan("10.4.16.{0}")
